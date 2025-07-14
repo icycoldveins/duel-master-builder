@@ -69,7 +69,7 @@ export function DeckStats() {
           const Icon = section.icon;
 
           return (
-            <Card key={section.name} className="bg-gradient-card border-border shadow-card">
+            <Card key={section.name} className="bg-gradient-card border-border shadow-card relative">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ export function DeckStats() {
                   </div>
                   <Badge 
                     variant={isValid ? "default" : "destructive"}
-                    className={`bg-${section.color}/20 text-${section.color} border-${section.color}/30`}
+                    className={`absolute top-2 right-2 bg-${section.color}/20 text-${section.color} border-${section.color}/30`}
                   >
                     {section.count}/{section.limit}
                   </Badge>
