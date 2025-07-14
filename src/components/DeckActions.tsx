@@ -7,6 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Download, Save, FolderOpen, Plus, Trash2, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { saveDeck as saveDeckToSupabase, getDecks as getDecksFromSupabase } from '@/lib/supabase';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function DeckActions() {
   const [newDeckName, setNewDeckName] = useState('');
@@ -21,13 +25,51 @@ export function DeckActions() {
   const getDeckStats = useDeckStore(state => state.getDeckStats);
   const isDeckDirty = useDeckStore(state => state.isDeckDirty);
   const { toast } = useToast();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSaveDeck = () => {
-    saveDeck();
-    toast({
-      title: "Deck saved",
-      description: `"${currentDeck.name}" has been saved`,
-    });
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  // Save deck to Supabase
+  const handleSaveDeck = async () => {
+    if (!user) return;
+    try {
+      await saveDeckToSupabase(currentDeck, user.id);
+      toast({
+        title: "Deck saved",
+        description: `"${currentDeck.name}" has been saved to your account`,
+      });
+    } catch (e) {
+      toast({
+        title: "Save failed",
+        description: "Could not save deck to Supabase.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Load decks from Supabase
+  const handleLoadDecks = async () => {
+    if (!user) return;
+    try {
+      const decks = await getDecksFromSupabase(user.id);
+      // You may want to update Zustand store here
+      // setSavedDecks(decks)
+      toast({
+        title: "Decks loaded",
+        description: `Loaded ${decks.length} decks from your account`,
+      });
+    } catch (e) {
+      toast({
+        title: "Load failed",
+        description: "Could not load decks from Supabase.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleNewDeck = () => {

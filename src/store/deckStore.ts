@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { YugiohCard } from '@/lib/api';
 import { v4 as uuidv4 } from 'uuid';
-import { useMemo } from 'react';
+import { saveDeck, getDecks } from '@/lib/supabase';
 
 // Generic Card type for extensibility
 export type GenericCard = Record<string, any>;
@@ -20,6 +19,7 @@ export interface Deck<T = YugiohCard> {
   id: string;
   createdAt: Date;
   updatedAt: Date;
+  user_id?: string;
 }
 
 interface DeckState<T = YugiohCard> {
@@ -34,9 +34,10 @@ interface DeckState<T = YugiohCard> {
   
   // Deck management
   createNewDeck: (name?: string) => void;
-  saveDeck: () => void;
-  loadDeck: (deckId: string) => void;
-  deleteDeck: (deckId: string) => void;
+  saveCurrentDeckToSupabase: (userId: string) => Promise<void>;
+  loadUserDecks: (userId: string) => Promise<void>;
+  deleteDeckFromSupabase: (deckId: string, userId: string) => Promise<void>;
+  resetStore: () => void;
   updateDeckName: (name: string) => void;
   
   // Utilities
@@ -66,223 +67,195 @@ const isExtraDeckCard = (card: any): boolean => {
   return extraDeckTypes.includes(card.type);
 };
 
-export const useDeckStore = create<DeckState>()(
-  persist(
-    (set, get) => ({
+export const useDeckStore = create<DeckState>()((set, get) => ({
+  currentDeck: createEmptyDeck(),
+  savedDecks: [],
+  lastSavedDeck: undefined,
+
+  addCardToDeck: (card, section) => {
+    const state = get();
+    const currentDeck = {
+      ...state.currentDeck,
+      mainDeck: [...state.currentDeck.mainDeck],
+      extraDeck: [...state.currentDeck.extraDeck],
+      sideDeck: [...state.currentDeck.sideDeck],
+    };
+    if (isExtraDeckCard(card) && section === 'main') {
+      section = 'extra';
+    }
+    const deckSection = section === 'main' ? 'mainDeck' :
+      section === 'extra' ? 'extraDeck' : 'sideDeck';
+    if (!state.canAddCard(section)) return;
+    const existingCardIndex = currentDeck[deckSection].findIndex(
+      deckCard => deckCard.card.id === card.id
+    );
+    if (existingCardIndex >= 0) {
+      if (currentDeck[deckSection][existingCardIndex].count < 3) {
+        currentDeck[deckSection][existingCardIndex] = {
+          ...currentDeck[deckSection][existingCardIndex],
+          count: currentDeck[deckSection][existingCardIndex].count + 1
+        };
+      }
+    } else {
+      currentDeck[deckSection].push({ card, count: 1 });
+    }
+    currentDeck.updatedAt = new Date();
+    set({ currentDeck });
+  },
+
+  removeCardFromDeck: (cardId, section) => {
+    const state = get();
+    const currentDeck = {
+      ...state.currentDeck,
+      mainDeck: [...state.currentDeck.mainDeck],
+      extraDeck: [...state.currentDeck.extraDeck],
+      sideDeck: [...state.currentDeck.sideDeck],
+    };
+    const deckSection = section === 'main' ? 'mainDeck' :
+      section === 'extra' ? 'extraDeck' : 'sideDeck';
+    const existingCardIndex = currentDeck[deckSection].findIndex(
+      deckCard => deckCard.card.id === cardId
+    );
+    if (existingCardIndex >= 0) {
+      if (currentDeck[deckSection][existingCardIndex].count > 1) {
+        currentDeck[deckSection][existingCardIndex] = {
+          ...currentDeck[deckSection][existingCardIndex],
+          count: currentDeck[deckSection][existingCardIndex].count - 1
+        };
+      } else {
+        currentDeck[deckSection].splice(existingCardIndex, 1);
+      }
+      currentDeck.updatedAt = new Date();
+      set({ currentDeck });
+    }
+  },
+
+  updateCardCount: (cardId, section, count) => {
+    if (count < 0 || count > 3) return;
+    const state = get();
+    const currentDeck = {
+      ...state.currentDeck,
+      mainDeck: [...state.currentDeck.mainDeck],
+      extraDeck: [...state.currentDeck.extraDeck],
+      sideDeck: [...state.currentDeck.sideDeck],
+    };
+    const deckSection = section === 'main' ? 'mainDeck' :
+      section === 'extra' ? 'extraDeck' : 'sideDeck';
+    const existingCardIndex = currentDeck[deckSection].findIndex(
+      deckCard => deckCard.card.id === cardId
+    );
+    if (existingCardIndex >= 0) {
+      if (count === 0) {
+        currentDeck[deckSection].splice(existingCardIndex, 1);
+      } else {
+        currentDeck[deckSection][existingCardIndex] = {
+          ...currentDeck[deckSection][existingCardIndex],
+          count
+        };
+      }
+      currentDeck.updatedAt = new Date();
+      set({ currentDeck });
+    }
+  },
+
+  createNewDeck: (name) => {
+    const newDeck = createEmptyDeck(name);
+    set({ currentDeck: newDeck });
+  },
+
+  saveCurrentDeckToSupabase: async (userId) => {
+    const state = get();
+    const deck = { ...state.currentDeck, user_id: userId };
+    await saveDeck(deck, userId);
+    // Reload decks after save
+    const decks = await getDecks(userId);
+    set({ savedDecks: decks, lastSavedDeck: { ...state.currentDeck } });
+  },
+
+  loadUserDecks: async (userId) => {
+    const decks = await getDecks(userId);
+    set({ savedDecks: decks });
+  },
+
+  deleteDeckFromSupabase: async (deckId, userId) => {
+    await import('@/lib/supabase').then(({ supabase }) =>
+      supabase.from('decks').delete().eq('id', deckId).eq('user_id', userId)
+    );
+    // Reload decks after delete
+    const decks = await getDecks(userId);
+    set({ savedDecks: decks });
+  },
+
+  resetStore: () => {
+    set({
       currentDeck: createEmptyDeck(),
       savedDecks: [],
       lastSavedDeck: undefined,
+    });
+  },
 
-      addCardToDeck: (card, section) => {
-        const state = get();
-        // Deep clone deck sections for immutability
-        const currentDeck = {
-          ...state.currentDeck,
-          mainDeck: [...state.currentDeck.mainDeck],
-          extraDeck: [...state.currentDeck.extraDeck],
-          sideDeck: [...state.currentDeck.sideDeck],
-        };
-        // Auto-route extra deck cards to extra deck
-        if (isExtraDeckCard(card) && section === 'main') {
-          section = 'extra';
-        }
-        const deckSection = section === 'main' ? 'mainDeck' : 
-                           section === 'extra' ? 'extraDeck' : 'sideDeck';
-        // Check limits
-        if (!state.canAddCard(section)) return;
-        const existingCardIndex = currentDeck[deckSection].findIndex(
-          deckCard => deckCard.card.id === card.id
-        );
-        if (existingCardIndex >= 0) {
-          // Card exists, increase count (max 3)
-          if (currentDeck[deckSection][existingCardIndex].count < 3) {
-            currentDeck[deckSection][existingCardIndex] = {
-              ...currentDeck[deckSection][existingCardIndex],
-              count: currentDeck[deckSection][existingCardIndex].count + 1
-            };
-          }
-        } else {
-          // New card, add to deck
-          currentDeck[deckSection].push({ card, count: 1 });
-        }
-        currentDeck.updatedAt = new Date();
-        set({ currentDeck });
-      },
+  updateDeckName: (name) => {
+    const state = get();
+    const currentDeck = { ...state.currentDeck, name, updatedAt: new Date() };
+    set({ currentDeck });
+  },
 
-      removeCardFromDeck: (cardId, section) => {
-        const state = get();
-        const currentDeck = {
-          ...state.currentDeck,
-          mainDeck: [...state.currentDeck.mainDeck],
-          extraDeck: [...state.currentDeck.extraDeck],
-          sideDeck: [...state.currentDeck.sideDeck],
-        };
-        const deckSection = section === 'main' ? 'mainDeck' : 
-                           section === 'extra' ? 'extraDeck' : 'sideDeck';
-        const existingCardIndex = currentDeck[deckSection].findIndex(
-          deckCard => deckCard.card.id === cardId
-        );
-        if (existingCardIndex >= 0) {
-          if (currentDeck[deckSection][existingCardIndex].count > 1) {
-            currentDeck[deckSection][existingCardIndex] = {
-              ...currentDeck[deckSection][existingCardIndex],
-              count: currentDeck[deckSection][existingCardIndex].count - 1
-            };
-          } else {
-            currentDeck[deckSection].splice(existingCardIndex, 1);
-          }
-          currentDeck.updatedAt = new Date();
-          set({ currentDeck });
-        }
-      },
+  getDeckStats: () => {
+    const state = get();
+    const { currentDeck } = state;
+    const mainCount = currentDeck.mainDeck.reduce((sum, card) => sum + card.count, 0);
+    const extraCount = currentDeck.extraDeck.reduce((sum, card) => sum + card.count, 0);
+    const sideCount = currentDeck.sideDeck.reduce((sum, card) => sum + card.count, 0);
+    return {
+      mainCount,
+      extraCount,
+      sideCount,
+      total: mainCount + extraCount + sideCount
+    };
+  },
 
-      updateCardCount: (cardId, section, count) => {
-        if (count < 0 || count > 3) return;
-        const state = get();
-        const currentDeck = {
-          ...state.currentDeck,
-          mainDeck: [...state.currentDeck.mainDeck],
-          extraDeck: [...state.currentDeck.extraDeck],
-          sideDeck: [...state.currentDeck.sideDeck],
-        };
-        const deckSection = section === 'main' ? 'mainDeck' : 
-                           section === 'extra' ? 'extraDeck' : 'sideDeck';
-        const existingCardIndex = currentDeck[deckSection].findIndex(
-          deckCard => deckCard.card.id === cardId
-        );
-        if (existingCardIndex >= 0) {
-          if (count === 0) {
-            currentDeck[deckSection].splice(existingCardIndex, 1);
-          } else {
-            currentDeck[deckSection][existingCardIndex] = {
-              ...currentDeck[deckSection][existingCardIndex],
-              count
-            };
-          }
-          currentDeck.updatedAt = new Date();
-          set({ currentDeck });
-        }
-      },
-
-      createNewDeck: (name) => {
-        const newDeck = createEmptyDeck(name);
-        set({ currentDeck: newDeck });
-      },
-
-      saveDeck: () => {
-        const state = get();
-        const savedDecks = [...state.savedDecks];
-        const existingIndex = savedDecks.findIndex(deck => deck.id === state.currentDeck.id);
-        if (existingIndex >= 0) {
-          savedDecks[existingIndex] = { ...state.currentDeck, updatedAt: new Date() };
-        } else {
-          savedDecks.push({ ...state.currentDeck });
-        }
-        set({ savedDecks, lastSavedDeck: { ...state.currentDeck } });
-      },
-
-      loadDeck: (deckId) => {
-        const state = get();
-        const deck = state.savedDecks.find(d => d.id === deckId);
-        if (deck) {
-          set({ currentDeck: { ...deck } });
-        }
-      },
-
-      deleteDeck: (deckId) => {
-        const state = get();
-        const savedDecks = state.savedDecks.filter(deck => deck.id !== deckId);
-        let newCurrentDeck = state.currentDeck;
-        let newLastSavedDeck = state.lastSavedDeck;
-        if (state.currentDeck.id === deckId) {
-          if (savedDecks.length > 0) {
-            newCurrentDeck = { ...savedDecks[0] };
-            newLastSavedDeck = { ...savedDecks[0] };
-          } else {
-            newCurrentDeck = createEmptyDeck();
-            newLastSavedDeck = undefined;
-          }
-        }
-        set({ savedDecks, currentDeck: newCurrentDeck, lastSavedDeck: newLastSavedDeck });
-      },
-
-      updateDeckName: (name) => {
-        const state = get();
-        const currentDeck = { ...state.currentDeck, name, updatedAt: new Date() };
-        set({ currentDeck });
-      },
-
-      // Memoized getDeckStats using closure
-      getDeckStats: () => {
-        const state = get();
-        // Memoize based on deck id and updatedAt
-        const { currentDeck } = state;
-        const mainCount = currentDeck.mainDeck.reduce((sum, card) => sum + card.count, 0);
-        const extraCount = currentDeck.extraDeck.reduce((sum, card) => sum + card.count, 0);
-        const sideCount = currentDeck.sideDeck.reduce((sum, card) => sum + card.count, 0);
-        return {
-          mainCount,
-          extraCount,
-          sideCount,
-          total: mainCount + extraCount + sideCount
-        };
-      },
-
-      canAddCard: (section) => {
-        const stats = get().getDeckStats();
-        switch (section) {
-          case 'main':
-            return stats.mainCount < 60;
-          case 'extra':
-            return stats.extraCount < 15;
-          case 'side':
-            return stats.sideCount < 15;
-          default:
-            return false;
-        }
-      },
-
-      exportDeck: () => {
-        const state = get();
-        const { currentDeck } = state;
-        let deckText = `# ${currentDeck.name}\n\n`;
-        // Main Deck
-        deckText += '# Main Deck\n';
-        currentDeck.mainDeck.forEach(deckCard => {
-          deckText += `${deckCard.count}x ${deckCard.card.name}\n`;
-        });
-        // Extra Deck
-        if (currentDeck.extraDeck.length > 0) {
-          deckText += '\n# Extra Deck\n';
-          currentDeck.extraDeck.forEach(deckCard => {
-            deckText += `${deckCard.count}x ${deckCard.card.name}\n`;
-          });
-        }
-        // Side Deck
-        if (currentDeck.sideDeck.length > 0) {
-          deckText += '\n# Side Deck\n';
-          currentDeck.sideDeck.forEach(deckCard => {
-            deckText += `${deckCard.count}x ${deckCard.card.name}\n`;
-          });
-        }
-        return deckText;
-      },
-
-      isDeckDirty: () => {
-        const state = get();
-        const a = state.currentDeck;
-        const b = state.lastSavedDeck;
-        if (!b) return true;
-        return JSON.stringify(a) !== JSON.stringify(b);
-      }
-    }),
-    {
-      name: 'yugioh-deck-storage',
-      partialize: (state) => ({ 
-        savedDecks: state.savedDecks,
-        currentDeck: state.currentDeck,
-        lastSavedDeck: state.lastSavedDeck
-      })
+  canAddCard: (section) => {
+    const stats = get().getDeckStats();
+    switch (section) {
+      case 'main':
+        return stats.mainCount < 60;
+      case 'extra':
+        return stats.extraCount < 15;
+      case 'side':
+        return stats.sideCount < 15;
+      default:
+        return false;
     }
-  )
-);
+  },
+
+  exportDeck: () => {
+    const state = get();
+    const { currentDeck } = state;
+    let deckText = `# ${currentDeck.name}\n\n`;
+    deckText += '# Main Deck\n';
+    currentDeck.mainDeck.forEach(deckCard => {
+      deckText += `${deckCard.count}x ${deckCard.card.name}\n`;
+    });
+    if (currentDeck.extraDeck.length > 0) {
+      deckText += '\n# Extra Deck\n';
+      currentDeck.extraDeck.forEach(deckCard => {
+        deckText += `${deckCard.count}x ${deckCard.card.name}\n`;
+      });
+    }
+    if (currentDeck.sideDeck.length > 0) {
+      deckText += '\n# Side Deck\n';
+      currentDeck.sideDeck.forEach(deckCard => {
+        deckText += `${deckCard.count}x ${deckCard.card.name}\n`;
+      });
+    }
+    return deckText;
+  },
+
+  isDeckDirty: () => {
+    const state = get();
+    const a = state.currentDeck;
+    const b = state.lastSavedDeck;
+    if (!b) return true;
+    return JSON.stringify(a) !== JSON.stringify(b);
+  }
+}));
