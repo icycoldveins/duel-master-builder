@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { isUsernameAvailable, upsertProfile } from '@/lib/supabase';
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function DeckBuilder() {
   const [activeTab, setActiveTab] = useState('search');
@@ -23,6 +24,7 @@ export function DeckBuilder() {
   const stats = getDeckStats();
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Username enforcement state
   const [username, setUsername] = useState('');
@@ -40,6 +42,12 @@ export function DeckBuilder() {
       setShowUsernameDialog(false);
     }
   }, [user, loading]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   const validateUsername = (name) => {
     if (!name) return 'Username is required.';

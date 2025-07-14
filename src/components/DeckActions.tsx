@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { saveDeck as saveDeckToSupabase, getDecks as getDecksFromSupabase } from '@/lib/supabase';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CardPreview } from './CardPreview';
 
 export function DeckActions() {
   const [newDeckName, setNewDeckName] = useState('');
@@ -26,6 +27,10 @@ export function DeckActions() {
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Draw Five Cards state
+  const [showDrawModal, setShowDrawModal] = useState(false);
+  const [drawnHand, setDrawnHand] = useState([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -165,6 +170,24 @@ export function DeckActions() {
     }
   };
 
+  // Helper to flatten mainDeck by count
+  const getFlatMainDeck = () => {
+    return currentDeck.mainDeck.flatMap(deckCard => Array(deckCard.count).fill(deckCard.card));
+  };
+
+  // Draw five random cards
+  const handleDrawFive = () => {
+    const flatDeck = getFlatMainDeck();
+    if (flatDeck.length < 5) {
+      toast({ title: 'Not enough cards', description: 'Main deck must have at least 5 cards to draw a hand.', variant: 'destructive' });
+      return;
+    }
+    // Shuffle and pick 5
+    const shuffled = [...flatDeck].sort(() => Math.random() - 0.5);
+    setDrawnHand(shuffled.slice(0, 5));
+    setShowDrawModal(true);
+  };
+
   const stats = getDeckStats();
 
   return (
@@ -181,6 +204,12 @@ export function DeckActions() {
           >
             <Save className="h-4 w-4 mr-2" />
             Save Deck
+          </Button>
+          <Button 
+            onClick={handleDrawFive}
+            className="w-full bg-gradient-secondary hover:shadow-secondary-glow"
+          >
+            Draw Five Cards
           </Button>
           
           <div className="grid grid-cols-2 gap-2">
@@ -319,6 +348,23 @@ export function DeckActions() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showDrawModal} onOpenChange={setShowDrawModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Your Hand (5 Cards)</DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-2 justify-center items-center py-4">
+            {drawnHand.map(card => (
+              <CardPreview key={card.id + Math.random()} card={card} inDeck={false} />
+            ))}
+          </div>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={handleDrawFive} variant="outline">Re-draw</Button>
+            <Button onClick={() => setShowDrawModal(false)} variant="secondary">Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
