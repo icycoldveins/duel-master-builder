@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { yugiohAPI, YugiohCard, SearchFilters } from '@/lib/api';
 import { CardGrid } from './CardGrid';
 import { useToast } from '@/hooks/use-toast';
+import { useDeckStore } from '@/store/deckStore';
 
 export function CardSearch() {
   const [cards, setCards] = useState<YugiohCard[]>([]);
@@ -14,6 +15,7 @@ export function CardSearch() {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
+  const currentDeck = useDeckStore(state => state.currentDeck);
 
   const searchCards = useCallback(async (term: string, searchFilters: SearchFilters = {}) => {
     setLoading(true);
@@ -45,6 +47,17 @@ export function CardSearch() {
   useEffect(() => {
     searchCards('');
   }, [searchCards]);
+
+  // Enrich cards with inDeck, deckSection, and deckCount
+  const enrichedCards = cards.map(card => {
+    const main = currentDeck.mainDeck.find(dc => dc.card.id === card.id);
+    if (main) return { ...card, inDeck: true, deckSection: 'main', deckCount: main.count };
+    const extra = currentDeck.extraDeck.find(dc => dc.card.id === card.id);
+    if (extra) return { ...card, inDeck: true, deckSection: 'extra', deckCount: extra.count };
+    const side = currentDeck.sideDeck.find(dc => dc.card.id === card.id);
+    if (side) return { ...card, inDeck: true, deckSection: 'side', deckCount: side.count };
+    return { ...card, inDeck: false, deckCount: 0 };
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +178,7 @@ export function CardSearch() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <CardGrid cards={cards} />
+          <CardGrid cards={enrichedCards} compact={true} />
         )}
       </div>
     </div>

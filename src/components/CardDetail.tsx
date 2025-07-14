@@ -1,9 +1,12 @@
-import { YugiohCard } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useDeckStore } from '@/store/deckStore';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import { yugiohAPI, YugiohCard } from '@/lib/api';
+import { CardGrid } from './CardGrid';
+import { Loader2 } from 'lucide-react';
 
 interface CardDetailProps {
   card: YugiohCard;
@@ -13,6 +16,25 @@ export function CardDetail({ card }: CardDetailProps) {
   const addCardToDeck = useDeckStore(state => state.addCardToDeck);
   const canAddCard = useDeckStore(state => state.canAddCard);
   const { toast } = useToast();
+
+  // Related cards by archetype
+  const [related, setRelated] = useState<YugiohCard[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
+  useEffect(() => {
+    let ignore = false;
+    if (card.archetype) {
+      setLoadingRelated(true);
+      yugiohAPI.searchCards({ archetype: card.archetype }).then(cards => {
+        if (!ignore) {
+          setRelated(cards.filter(c => c.id !== card.id).slice(0, 8));
+          setLoadingRelated(false);
+        }
+      });
+    } else {
+      setRelated([]);
+    }
+    return () => { ignore = true; };
+  }, [card.archetype, card.id]);
 
   const isExtraDeckCard = () => {
     const extraDeckTypes = ['Fusion Monster', 'Synchro Monster', 'XYZ Monster', 'Link Monster'];
@@ -155,6 +177,19 @@ export function CardDetail({ card }: CardDetailProps) {
           )}
         </div>
       </div>
+      {/* Related Cards by Archetype */}
+      {card.archetype && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-foreground mb-2">Related "{card.archetype}" Cards</h3>
+          {loadingRelated ? (
+            <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="animate-spin w-4 h-4" /> Loading...</div>
+          ) : related.length > 0 ? (
+            <CardGrid cards={related} compact={true} />
+          ) : (
+            <div className="text-muted-foreground text-sm">No other cards found in this archetype.</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

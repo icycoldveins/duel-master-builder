@@ -1,5 +1,7 @@
 import { YugiohCard } from '@/lib/api';
 import { CardPreview } from './CardPreview';
+import { useContext } from 'react';
+import { CardDialogContext } from './CardDialogProvider';
 
 interface DeckCardDisplay extends YugiohCard {
   deckCount?: number;
@@ -9,9 +11,11 @@ interface DeckCardDisplay extends YugiohCard {
 
 interface CardGridProps {
   cards: (YugiohCard | DeckCardDisplay)[];
+  compact?: boolean;
 }
 
-export function CardGrid({ cards }: CardGridProps) {
+export function CardGrid({ cards, compact = false }: CardGridProps) {
+  // No dialog state here
   if (cards.length === 0) {
     return (
       <div className="text-center py-12">
@@ -34,6 +38,7 @@ export function CardGrid({ cards }: CardGridProps) {
             inDeck={deckCard.inDeck || false}
             deckSection={deckCard.deckSection || 'main'}
             count={deckCard.deckCount || 0}
+            compact={compact}
           />
         );
       })}
