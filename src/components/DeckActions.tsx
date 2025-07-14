@@ -17,13 +17,12 @@ export function DeckActions() {
   const [showSavedDecks, setShowSavedDecks] = useState(false);
   const currentDeck = useDeckStore(state => state.currentDeck);
   const savedDecks = useDeckStore(state => state.savedDecks);
-  const saveDeck = useDeckStore(state => state.saveDeck);
-  const loadDeck = useDeckStore(state => state.loadDeck);
-  const deleteDeck = useDeckStore(state => state.deleteDeck);
   const createNewDeck = useDeckStore(state => state.createNewDeck);
   const exportDeck = useDeckStore(state => state.exportDeck);
   const getDeckStats = useDeckStore(state => state.getDeckStats);
   const isDeckDirty = useDeckStore(state => state.isDeckDirty);
+  const loadUserDecks = useDeckStore(state => state.loadUserDecks);
+  const deleteDeckFromSupabase = useDeckStore(state => state.deleteDeckFromSupabase);
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -37,11 +36,24 @@ export function DeckActions() {
   // Save deck to Supabase
   const handleSaveDeck = async () => {
     if (!user) return;
+    // Always fetch latest decks before checking limit
+    await loadUserDecks(user.id);
+    const latestDecks = useDeckStore.getState().savedDecks;
+    if (latestDecks.length >= 10) {
+      toast({
+        title: "Deck limit reached",
+        description: "You can only have up to 10 decks. Delete an existing deck to save a new one.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       await saveDeckToSupabase(currentDeck, user.id);
+      await loadUserDecks(user.id); // Refresh decks in Zustand store
+      const updatedDecks = useDeckStore.getState().savedDecks;
       toast({
         title: "Deck saved",
-        description: `"${currentDeck.name}" has been saved to your account`,
+        description: `"${currentDeck.name}" has been saved. You now have ${updatedDecks.length} decks.`,
       });
     } catch (e) {
       toast({
@@ -56,12 +68,11 @@ export function DeckActions() {
   const handleLoadDecks = async () => {
     if (!user) return;
     try {
-      const decks = await getDecksFromSupabase(user.id);
-      // You may want to update Zustand store here
-      // setSavedDecks(decks)
+      await loadUserDecks(user.id); // Use Zustand store method
+      const updatedDecks = useDeckStore.getState().savedDecks;
       toast({
         title: "Decks loaded",
-        description: `Loaded ${decks.length} decks from your account`,
+        description: `Loaded ${updatedDecks.length} decks from your account`,
       });
     } catch (e) {
       toast({
@@ -83,13 +94,20 @@ export function DeckActions() {
     }
   };
 
+  // Helper to set currentDeck directly
+  const setCurrentDeck = (deck) => {
+    useDeckStore.setState({ currentDeck: deck });
+  };
+
   const handleLoadDeck = (deckId: string) => {
     if (isDeckDirty()) {
       const confirm = window.confirm('You have unsaved changes. Are you sure you want to load another deck and lose your changes?');
       if (!confirm) return;
     }
     const deck = savedDecks.find(d => d.id === deckId);
-    loadDeck(deckId);
+    if (deck) {
+      setCurrentDeck(deck);
+    }
     setShowSavedDecks(false);
     toast({
       title: "Deck loaded",
@@ -97,13 +115,14 @@ export function DeckActions() {
     });
   };
 
-  const handleDeleteDeck = (deckId: string) => {
+  const handleDeleteDeck = async (deckId: string) => {
+    if (!user) return;
     if (isDeckDirty() && currentDeck.id === deckId) {
       const confirm = window.confirm('You have unsaved changes in this deck. Are you sure you want to delete it and lose your changes?');
       if (!confirm) return;
     }
     const deck = savedDecks.find(d => d.id === deckId);
-    deleteDeck(deckId);
+    await deleteDeckFromSupabase(deckId, user.id);
     toast({
       title: "Deck deleted",
       description: `"${deck?.name}" has been removed`,
