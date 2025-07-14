@@ -10,7 +10,8 @@ interface CardDetailProps {
 }
 
 export function CardDetail({ card }: CardDetailProps) {
-  const { addCardToDeck, canAddCard } = useDeckStore();
+  const addCardToDeck = useDeckStore(state => state.addCardToDeck);
+  const canAddCard = useDeckStore(state => state.canAddCard);
   const { toast } = useToast();
 
   const isExtraDeckCard = () => {

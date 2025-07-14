@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Edit3, Users, Zap, Shield } from 'lucide-react';
 
 export function DeckStats() {
-  const { currentDeck, getDeckStats, updateDeckName } = useDeckStore();
+  const currentDeck = useDeckStore(state => state.currentDeck);
+  const getDeckStats = useDeckStore(state => state.getDeckStats);
+  const updateDeckName = useDeckStore(state => state.updateDeckName);
   const stats = getDeckStats();
 
   const deckSections = [

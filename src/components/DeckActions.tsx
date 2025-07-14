@@ -11,16 +11,15 @@ import { useToast } from '@/hooks/use-toast';
 export function DeckActions() {
   const [newDeckName, setNewDeckName] = useState('');
   const [showSavedDecks, setShowSavedDecks] = useState(false);
-  const { 
-    currentDeck, 
-    savedDecks, 
-    saveDeck, 
-    loadDeck, 
-    deleteDeck, 
-    createNewDeck,
-    exportDeck,
-    getDeckStats 
-  } = useDeckStore();
+  const currentDeck = useDeckStore(state => state.currentDeck);
+  const savedDecks = useDeckStore(state => state.savedDecks);
+  const saveDeck = useDeckStore(state => state.saveDeck);
+  const loadDeck = useDeckStore(state => state.loadDeck);
+  const deleteDeck = useDeckStore(state => state.deleteDeck);
+  const createNewDeck = useDeckStore(state => state.createNewDeck);
+  const exportDeck = useDeckStore(state => state.exportDeck);
+  const getDeckStats = useDeckStore(state => state.getDeckStats);
+  const isDeckDirty = useDeckStore(state => state.isDeckDirty);
   const { toast } = useToast();
 
   const handleSaveDeck = () => {
@@ -43,6 +42,10 @@ export function DeckActions() {
   };
 
   const handleLoadDeck = (deckId: string) => {
+    if (isDeckDirty()) {
+      const confirm = window.confirm('You have unsaved changes. Are you sure you want to load another deck and lose your changes?');
+      if (!confirm) return;
+    }
     const deck = savedDecks.find(d => d.id === deckId);
     loadDeck(deckId);
     setShowSavedDecks(false);
@@ -53,6 +56,10 @@ export function DeckActions() {
   };
 
   const handleDeleteDeck = (deckId: string) => {
+    if (isDeckDirty() && currentDeck.id === deckId) {
+      const confirm = window.confirm('You have unsaved changes in this deck. Are you sure you want to delete it and lose your changes?');
+      if (!confirm) return;
+    }
     const deck = savedDecks.find(d => d.id === deckId);
     deleteDeck(deckId);
     toast({

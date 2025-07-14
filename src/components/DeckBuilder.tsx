@@ -8,7 +8,8 @@ import { CardSearch } from './CardSearch';
 
 export function DeckBuilder() {
   const [activeTab, setActiveTab] = useState('search');
-  const { currentDeck, getDeckStats } = useDeckStore();
+  const currentDeck = useDeckStore(state => state.currentDeck);
+  const getDeckStats = useDeckStore(state => state.getDeckStats);
   const stats = getDeckStats();
 
   return (

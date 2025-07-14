@@ -18,7 +18,10 @@ interface CardPreviewProps {
 export function CardPreview({ card, inDeck = false, deckSection = 'main', count = 0 }: CardPreviewProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const { addCardToDeck, removeCardFromDeck, canAddCard, getDeckStats } = useDeckStore();
+  const addCardToDeck = useDeckStore(state => state.addCardToDeck);
+  const removeCardFromDeck = useDeckStore(state => state.removeCardFromDeck);
+  const canAddCard = useDeckStore(state => state.canAddCard);
+  const getDeckStats = useDeckStore(state => state.getDeckStats);
   const { toast } = useToast();
 
   const handleAddCard = (section: 'main' | 'extra' | 'side' = deckSection) => {
