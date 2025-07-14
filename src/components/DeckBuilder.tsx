@@ -153,6 +153,7 @@ export function DeckBuilder() {
           </div>
           {/* Header */}
           <div className="text-center space-y-2 py-6">
+            <img src="/millennium-puzzle.png" alt="Millennium Puzzle Logo" style={{ display: 'inline-block', width: 64, height: 64 }} className="mx-auto mb-2" />
             <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               Yu-Gi-Oh! Deck Builder
             </h1>
