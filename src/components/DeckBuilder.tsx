@@ -25,6 +25,7 @@ export function DeckBuilder() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const loadUserDecks = useDeckStore(state => state.loadUserDecks);
 
   // Username enforcement state
   const [username, setUsername] = useState('');
@@ -48,6 +49,12 @@ export function DeckBuilder() {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!loading && user) {
+      loadUserDecks(user.id);
+    }
+  }, [user, loading, loadUserDecks]);
 
   const validateUsername = (name) => {
     if (!name) return 'Username is required.';
