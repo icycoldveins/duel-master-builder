@@ -12,10 +12,13 @@ import { saveDeck as saveDeckToSupabase, getDecks as getDecksFromSupabase } from
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CardPreview } from './CardPreview';
+import { LoginModal } from './LoginModal';
 
 export function DeckActions() {
   const [newDeckName, setNewDeckName] = useState('');
   const [showSavedDecks, setShowSavedDecks] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'save' | 'load' | null>(null);
   const currentDeck = useDeckStore(state => state.currentDeck);
   const savedDecks = useDeckStore(state => state.savedDecks);
   const createNewDeck = useDeckStore(state => state.createNewDeck);
@@ -32,15 +35,15 @@ export function DeckActions() {
   const [showDrawModal, setShowDrawModal] = useState(false);
   const [drawnHand, setDrawnHand] = useState([]);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
+  // Remove redirect to auth - allow unauthenticated access
 
   // Save deck to Supabase
   const handleSaveDeck = async () => {
-    if (!user) return;
+    if (!user) {
+      setPendingAction('save');
+      setShowLoginModal(true);
+      return;
+    }
     // Always fetch latest decks before checking limit
     await loadUserDecks(user.id);
     const latestDecks = useDeckStore.getState().savedDecks;
@@ -71,7 +74,11 @@ export function DeckActions() {
 
   // Load decks from Supabase
   const handleLoadDecks = async () => {
-    if (!user) return;
+    if (!user) {
+      setPendingAction('load');
+      setShowLoginModal(true);
+      return;
+    }
     try {
       await loadUserDecks(user.id); // Use Zustand store method
       const updatedDecks = useDeckStore.getState().savedDecks;
@@ -135,6 +142,16 @@ export function DeckActions() {
     });
   };
 
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    if (pendingAction === 'save') {
+      handleSaveDeck();
+    } else if (pendingAction === 'load') {
+      handleLoadDecks();
+    }
+    setPendingAction(null);
+  };
+
   const handleExportDeck = () => {
     const deckText = exportDeck();
     const blob = new Blob([deckText], { type: 'text/plain' });
@@ -192,20 +209,27 @@ export function DeckActions() {
 
   return (
     <div className="space-y-4">
+      {/* Login Modal */}
+      <LoginModal
+        open={showLoginModal}
+        onOpenChange={setShowLoginModal}
+        onSuccess={handleLoginSuccess}
+      />
+      
       {/* Quick Actions */}
       <Card className="bg-gradient-card border-border shadow-card">
         <CardHeader>
           <CardTitle className="text-lg text-foreground">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button 
-            onClick={handleSaveDeck} 
+          <Button
+            onClick={handleSaveDeck}
             className="w-full bg-gradient-primary hover:shadow-glow"
           >
             <Save className="h-4 w-4 mr-2" />
-            Save Deck
+            {user ? 'Save Deck' : 'Login to Save Deck'}
           </Button>
-          <Button 
+          <Button
             onClick={handleDrawFive}
             className="w-full bg-gradient-secondary hover:shadow-secondary-glow"
           >
@@ -213,8 +237,8 @@ export function DeckActions() {
           </Button>
           
           <div className="grid grid-cols-2 gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleExportDeck}
               disabled={stats.total === 0}
               className="border-border/50 hover:border-primary/50"
@@ -223,8 +247,8 @@ export function DeckActions() {
               Export
             </Button>
             
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleCopyDeckList}
               disabled={stats.total === 0}
               className="border-border/50 hover:border-primary/50"
@@ -238,7 +262,7 @@ export function DeckActions() {
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full border-border/50 hover:border-primary/50">
                 <FolderOpen className="h-4 w-4 mr-2" />
-                Load Deck ({savedDecks.length})
+                {user ? `Load Deck (${savedDecks.length})` : 'Login to Load Decks'}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -247,7 +271,21 @@ export function DeckActions() {
               </DialogHeader>
               
               <div className="space-y-4">
-                {savedDecks.length === 0 ? (
+                {!user ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Please login to access your saved decks.</p>
+                    <Button
+                      onClick={() => {
+                        setShowSavedDecks(false);
+                        setShowLoginModal(true);
+                        setPendingAction('load');
+                      }}
+                      className="mt-4"
+                    >
+                      Login
+                    </Button>
+                  </div>
+                ) : savedDecks.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No saved decks yet. Save your current deck to get started!
                   </div>
@@ -261,8 +299,8 @@ export function DeckActions() {
                       };
                       
                       return (
-                        <div 
-                          key={deck.id} 
+                        <div
+                          key={deck.id}
                           className="flex items-center justify-between p-4 bg-gradient-card rounded-lg border border-border"
                         >
                           <div className="space-y-1">
@@ -284,15 +322,15 @@ export function DeckActions() {
                           </div>
                           
                           <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               onClick={() => handleLoadDeck(deck.id)}
                               className="bg-gradient-primary hover:shadow-glow"
                             >
                               Load
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="destructive"
                               onClick={() => handleDeleteDeck(deck.id)}
                             >

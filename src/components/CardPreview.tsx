@@ -4,7 +4,7 @@ import { YugiohCard } from '@/lib/api';
 import { useDeckStore } from '@/store/deckStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CardDetail } from './CardDetail';
 import { useToast } from '@/hooks/use-toast';
 import { CardDialogContext } from './CardDialogProvider';
@@ -25,7 +25,7 @@ export function CardPreview({ card, inDeck = false, deckSection = 'main', count 
   const canAddCard = useDeckStore(state => state.canAddCard);
   const getDeckStats = useDeckStore(state => state.getDeckStats);
   const { toast } = useToast();
-  const { openCardId, openCardData, setOpenCard } = useContext(CardDialogContext);
+  const { openCard } = useContext(CardDialogContext);
 
   const handleAddCard = (section: 'main' | 'extra' | 'side' = deckSection) => {
     if (!canAddCard(section)) {
@@ -63,50 +63,48 @@ export function CardPreview({ card, inDeck = false, deckSection = 'main', count 
   };
 
   if (compact) {
-    const isOpen = openCardId === card.id;
     return (
-      <Dialog open={isOpen} onOpenChange={open => setOpenCard(open ? card : null)}>
-        <DialogTrigger asChild>
-          <div className="relative w-14 h-20 flex-shrink-0 cursor-pointer group" onClick={() => setOpenCard(card)}>
-            {!imageError && (
-              <img
-                src={card.card_images[0]?.image_url_small || card.card_images[0]?.image_url}
-                alt={card.name}
-                className={`w-full h-full object-cover rounded-md border border-border bg-muted/20 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageError(true)}
-              />
-            )}
-            {!imageLoaded && !imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
-                <div className="animate-pulse text-muted-foreground text-xs">...</div>
-              </div>
-            )}
-            {imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/20 text-muted-foreground text-[10px] text-center p-1">
-                {card.name}
-              </div>
-            )}
-            {inDeck && count > 0 && (
-              <Badge className="absolute top-1 right-1 bg-primary text-white text-[10px] px-1 py-0.5 rounded">
-                {count}
-              </Badge>
-            )}
-            {/* Add/Remove overlay */}
-            <div className="absolute bottom-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-10 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-              <Button size="icon" className="w-5 h-5 p-0 bg-gradient-primary text-white" onClick={e => { e.stopPropagation(); handleAddCard(isExtraDeckCard() ? 'extra' : 'main'); }}>
-                <Plus className="w-3 h-3" />
-              </Button>
-              <Button size="icon" className="w-5 h-5 p-0 bg-destructive text-white" onClick={e => { e.stopPropagation(); handleRemoveCard(deckSection); }}>
-                <Minus className="w-3 h-3" />
-              </Button>
-            </div>
+      <div
+        className="relative w-14 h-20 flex-shrink-0 cursor-pointer group"
+        onClick={() => openCard(card)}
+        tabIndex={0}
+        role="button"
+        aria-label={`View details for ${card.name}`}
+      >
+        {!imageError && (
+          <img
+            src={card.card_images[0]?.image_url_small || card.card_images[0]?.image_url}
+            alt={card.name}
+            className={`w-full h-full object-cover rounded-md border border-border bg-muted/20 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => setImageError(true)}
+          />
+        )}
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
+            <div className="animate-pulse text-muted-foreground text-xs">...</div>
           </div>
-        </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <CardDetail card={card} />
-        </DialogContent>
-      </Dialog>
+        )}
+        {imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/20 text-muted-foreground text-[10px] text-center p-1">
+            {card.name}
+          </div>
+        )}
+        {inDeck && count > 0 && (
+          <Badge className="absolute top-1 right-1 bg-primary text-white text-[10px] px-1 py-0.5 rounded">
+            {count}
+          </Badge>
+        )}
+        {/* Add/Remove overlay */}
+        <div className="absolute bottom-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-10 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+          <Button size="icon" className="w-5 h-5 p-0 bg-gradient-primary text-white" onClick={e => { e.stopPropagation(); handleAddCard(isExtraDeckCard() ? 'extra' : 'main'); }}>
+            <Plus className="w-3 h-3" />
+          </Button>
+          <Button size="icon" className="w-5 h-5 p-0 bg-destructive text-white" onClick={e => { e.stopPropagation(); handleRemoveCard(deckSection); }}>
+            <Minus className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -148,16 +146,15 @@ export function CardPreview({ card, inDeck = false, deckSection = 'main', count 
 
           {/* Quick actions overlay */}
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <CardDetail card={card} />
-              </DialogContent>
-            </Dialog>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-8 w-8 p-0"
+              onClick={e => { e.stopPropagation(); openCard(card); }}
+              aria-label={`View details for ${card.name}`}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
 
             {!inDeck && (
               <Button 
