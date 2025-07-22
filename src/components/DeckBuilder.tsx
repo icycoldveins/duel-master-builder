@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { isUsernameAvailable, upsertProfile } from '@/lib/supabase';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LoginModal } from './LoginModal';
 
 export function DeckBuilder() {
   const [activeTab, setActiveTab] = useState('search');
@@ -32,6 +33,7 @@ export function DeckBuilder() {
   const [usernameError, setUsernameError] = useState('');
   const [checking, setChecking] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Reserved words (add more as needed)
   const reserved = ['admin', 'root', 'support', 'null', 'undefined', 'user', 'test', 'me', 'profile', 'api'];
@@ -44,11 +46,7 @@ export function DeckBuilder() {
     }
   }, [user, loading]);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
+  // Remove the redirect to auth - allow unauthenticated access
 
   useEffect(() => {
     if (!loading && user) {
@@ -114,7 +112,7 @@ export function DeckBuilder() {
           <DialogHeader>
             <DialogTitle>Choose a Username</DialogTitle>
             <DialogDescription>
-              Usernames are unique and required. You cannot use the app until you set one.
+              Usernames are unique and required to save and load decks.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSetUsername} className="space-y-4">
@@ -133,11 +131,24 @@ export function DeckBuilder() {
           </form>
         </DialogContent>
       </Dialog>
+      
+      {/* Login Modal */}
+      <LoginModal
+        open={showLoginModal}
+        onOpenChange={setShowLoginModal}
+        onSuccess={() => {
+          // After successful login, reload user decks
+          if (user) {
+            loadUserDecks(user.id);
+          }
+        }}
+      />
+      
       <div className="min-h-screen bg-gradient-dark">
         <div className="container mx-auto p-4">
           {/* User Info Top Right */}
           <div className="flex justify-end items-center mb-2">
-            {!loading && user && (
+            {!loading && user ? (
               <div className="flex items-center gap-3 bg-gradient-card border border-border rounded-xl px-4 py-2 shadow-card">
                 <span className="font-medium text-foreground">
                   {user.user_metadata?.username || user.email}
@@ -149,11 +160,23 @@ export function DeckBuilder() {
                   Logout
                 </button>
               </div>
+            ) : !loading && (
+              <div className="flex items-center gap-3 bg-gradient-card border border-border rounded-xl px-4 py-2 shadow-card">
+                <span className="text-muted-foreground text-sm">
+                  Guest Mode - Login to save decks
+                </span>
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-3 py-1 rounded bg-gradient-primary text-white hover:shadow-glow transition-all text-sm"
+                >
+                  Login
+                </button>
+              </div>
             )}
           </div>
           {/* Header */}
           <div className="text-center space-y-2 py-6">
-            <img src="/millennium-puzzle.png" alt="Millennium Puzzle Logo" style={{ display: 'inline-block', width: 64, height: 64 }} className="mx-auto mb-2" />
+            <img src="/millennium-puzzle.png" alt="Millennium Puzzle Logo" style={{ display: 'inline-block', width: 64, height: 64 }} className="mx-auto mb-2 logo-glow" />
             <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               Yu-Gi-Oh! Deck Builder
             </h1>
