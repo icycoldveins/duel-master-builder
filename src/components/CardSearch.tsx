@@ -64,7 +64,7 @@ export function CardSearch() {
     searchCards(searchTerm, filters);
   };
 
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+  const handleFilterChange = (key: keyof SearchFilters, value: string | number | undefined) => {
     const newFilters = { ...filters, [key]: value === 'all' ? undefined : value };
     setFilters(newFilters);
     searchCards(searchTerm, newFilters);
@@ -73,36 +73,42 @@ export function CardSearch() {
   return (
     <div className="space-y-6">
       {/* Search Header */}
-      <div className="bg-gradient-card p-6 rounded-xl border border-border shadow-card">
+      <div>
+        <h2 className="text-2xl font-bold text-gradient-accent mb-5">Card Search</h2>
         <form onSubmit={handleSearch} className="space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <div className="flex gap-3">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-accent/60 h-5 w-5 transition-colors group-focus-within:text-accent" />
               <Input
                 placeholder="Search cards by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-input/50 border-border/50 focus:bg-input focus:border-primary/50 transition-all"
+                className="pl-12 h-14 bg-black/30 backdrop-blur-md border-2 border-white/10 focus:border-accent/50 focus:bg-black/40 transition-all duration-300 rounded-2xl font-medium text-base placeholder:text-muted-foreground/50 hover:border-white/20"
               />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-accent opacity-0 group-focus-within:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
             </div>
-            <Button type="submit" disabled={loading} className="bg-gradient-primary hover:shadow-glow transition-all">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              className="h-14 px-8 bg-gradient-accent hover:shadow-[0_0_30px_rgba(275,90%,70%,0.4)] transition-all duration-300 rounded-2xl font-semibold text-base"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className="border-border/50 hover:border-primary/50 transition-all"
+              className={`h-14 px-5 border-2 transition-all duration-300 rounded-2xl ${showFilters ? 'border-accent/50 bg-accent/10' : 'border-white/10 hover:border-accent/30 hover:bg-accent/5'}`}
             >
-              <Filter className="h-4 w-4" />
+              <Filter className={`h-5 w-5 transition-transform duration-300 ${showFilters ? 'rotate-180 text-accent' : ''}`} />
             </Button>
           </div>
 
           {/* Advanced Filters */}
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/20 rounded-lg border border-border/30">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-black/30 backdrop-blur-md rounded-2xl border-2 border-white/10 animate-scale-in">
               <Select onValueChange={(value) => handleFilterChange('type', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Card Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,7 +124,7 @@ export function CardSearch() {
               </Select>
 
               <Select onValueChange={(value) => handleFilterChange('race', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Race/Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,7 +140,7 @@ export function CardSearch() {
               </Select>
 
               <Select onValueChange={(value) => handleFilterChange('attribute', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Attribute" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,7 +156,7 @@ export function CardSearch() {
               </Select>
 
               <Select onValueChange={(value) => handleFilterChange('level', value === 'all' ? undefined : parseInt(value))}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Level/Rank" />
                 </SelectTrigger>
                 <SelectContent>
@@ -166,19 +172,50 @@ export function CardSearch() {
       </div>
 
       {/* Results */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-foreground">
-            {loading ? 'Searching...' : `Found ${cards.length} cards`}
-          </h2>
+      <div className="space-y-5">
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-accent/10 to-purple-500/10 backdrop-blur-sm rounded-2xl border border-white/10">
+          <h3 className="text-lg font-semibold">
+            {loading ? (
+              <span className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                <span className="text-accent">Searching...</span>
+              </span>
+            ) : (
+              <span className="bg-gradient-accent bg-clip-text text-transparent font-bold">
+                {cards.length} {cards.length === 1 ? 'card' : 'cards'} found
+              </span>
+            )}
+          </h3>
+          {!loading && cards.length > 0 && (
+            <span className="text-sm text-muted-foreground/70 font-medium">
+              Click cards to add
+            </span>
+          )}
         </div>
         
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex flex-col items-center justify-center py-20 space-y-6">
+            <div className="relative">
+              <div className="w-20 h-20 border-4 border-accent/20 rounded-full"></div>
+              <div className="absolute top-0 left-0 w-20 h-20 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 blur-xl bg-accent/20 rounded-full animate-pulse"></div>
+            </div>
+            <p className="text-muted-foreground text-base font-medium">Loading cards...</p>
+          </div>
+        ) : cards.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-6">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent/20 to-purple-500/20 flex items-center justify-center animate-pulse">
+              <Search className="h-12 w-12 text-accent/60" />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-lg font-medium text-foreground">No cards found</p>
+              <p className="text-sm text-muted-foreground/70">Try adjusting your search criteria</p>
+            </div>
           </div>
         ) : (
-          <CardGrid cards={enrichedCards} compact={true} />
+          <div className="animate-fade-in">
+            <CardGrid cards={enrichedCards} compact={true} />
+          </div>
         )}
       </div>
     </div>
