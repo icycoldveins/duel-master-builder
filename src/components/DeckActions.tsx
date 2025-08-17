@@ -1,32 +1,45 @@
-import { useState } from 'react';
-import { useDeckStore } from '@/store/deckStore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Download, Save, FolderOpen, Plus, Trash2, Copy } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
-import { saveDeck as saveDeckToSupabase, getDecks as getDecksFromSupabase } from '@/lib/supabase';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CardPreview } from './CardPreview';
-import { LoginModal } from './LoginModal';
+import { useState } from "react";
+import { useDeckStore } from "@/store/deckStore";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Download, Save, FolderOpen, Plus, Trash2, Copy } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  saveDeck as saveDeckToSupabase,
+  getDecks as getDecksFromSupabase,
+} from "@/lib/supabase";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { CardPreview } from "./CardPreview";
+import { LoginModal } from "./LoginModal";
 
 export function DeckActions() {
-  const [newDeckName, setNewDeckName] = useState('');
+  const [newDeckName, setNewDeckName] = useState("");
   const [showSavedDecks, setShowSavedDecks] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'save' | 'load' | null>(null);
-  const currentDeck = useDeckStore(state => state.currentDeck);
-  const savedDecks = useDeckStore(state => state.savedDecks);
-  const createNewDeck = useDeckStore(state => state.createNewDeck);
-  const exportDeck = useDeckStore(state => state.exportDeck);
-  const getDeckStats = useDeckStore(state => state.getDeckStats);
-  const isDeckDirty = useDeckStore(state => state.isDeckDirty);
-  const loadUserDecks = useDeckStore(state => state.loadUserDecks);
-  const deleteDeckFromSupabase = useDeckStore(state => state.deleteDeckFromSupabase);
+  const [pendingAction, setPendingAction] = useState<"save" | "load" | null>(
+    null,
+  );
+  const currentDeck = useDeckStore((state) => state.currentDeck);
+  const savedDecks = useDeckStore((state) => state.savedDecks);
+  const createNewDeck = useDeckStore((state) => state.createNewDeck);
+  const exportDeck = useDeckStore((state) => state.exportDeck);
+  const getDeckStats = useDeckStore((state) => state.getDeckStats);
+  const isDeckDirty = useDeckStore((state) => state.isDeckDirty);
+  const loadUserDecks = useDeckStore((state) => state.loadUserDecks);
+  const deleteDeckFromSupabase = useDeckStore(
+    (state) => state.deleteDeckFromSupabase,
+  );
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +53,7 @@ export function DeckActions() {
   // Save deck to Supabase
   const handleSaveDeck = async () => {
     if (!user) {
-      setPendingAction('save');
+      setPendingAction("save");
       setShowLoginModal(true);
       return;
     }
@@ -50,8 +63,9 @@ export function DeckActions() {
     if (latestDecks.length >= 10) {
       toast({
         title: "Deck limit reached",
-        description: "You can only have up to 10 decks. Delete an existing deck to save a new one.",
-        variant: "destructive"
+        description:
+          "You can only have up to 10 decks. Delete an existing deck to save a new one.",
+        variant: "destructive",
       });
       return;
     }
@@ -67,7 +81,7 @@ export function DeckActions() {
       toast({
         title: "Save failed",
         description: "Could not save deck to Supabase.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -75,7 +89,7 @@ export function DeckActions() {
   // Load decks from Supabase
   const handleLoadDecks = async () => {
     if (!user) {
-      setPendingAction('load');
+      setPendingAction("load");
       setShowLoginModal(true);
       return;
     }
@@ -90,7 +104,7 @@ export function DeckActions() {
       toast({
         title: "Load failed",
         description: "Could not load decks from Supabase.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -98,7 +112,7 @@ export function DeckActions() {
   const handleNewDeck = () => {
     if (newDeckName.trim()) {
       createNewDeck(newDeckName.trim());
-      setNewDeckName('');
+      setNewDeckName("");
       toast({
         title: "New deck created",
         description: `Started building "${newDeckName.trim()}"`,
@@ -113,10 +127,12 @@ export function DeckActions() {
 
   const handleLoadDeck = (deckId: string) => {
     if (isDeckDirty()) {
-      const confirm = window.confirm('You have unsaved changes. Are you sure you want to load another deck and lose your changes?');
+      const confirm = window.confirm(
+        "You have unsaved changes. Are you sure you want to load another deck and lose your changes?",
+      );
       if (!confirm) return;
     }
-    const deck = savedDecks.find(d => d.id === deckId);
+    const deck = savedDecks.find((d) => d.id === deckId);
     if (deck) {
       setCurrentDeck(deck);
     }
@@ -130,23 +146,25 @@ export function DeckActions() {
   const handleDeleteDeck = async (deckId: string) => {
     if (!user) return;
     if (isDeckDirty() && currentDeck.id === deckId) {
-      const confirm = window.confirm('You have unsaved changes in this deck. Are you sure you want to delete it and lose your changes?');
+      const confirm = window.confirm(
+        "You have unsaved changes in this deck. Are you sure you want to delete it and lose your changes?",
+      );
       if (!confirm) return;
     }
-    const deck = savedDecks.find(d => d.id === deckId);
+    const deck = savedDecks.find((d) => d.id === deckId);
     await deleteDeckFromSupabase(deckId, user.id);
     toast({
       title: "Deck deleted",
       description: `"${deck?.name}" has been removed`,
-      variant: "destructive"
+      variant: "destructive",
     });
   };
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
-    if (pendingAction === 'save') {
+    if (pendingAction === "save") {
       handleSaveDeck();
-    } else if (pendingAction === 'load') {
+    } else if (pendingAction === "load") {
       handleLoadDecks();
     }
     setPendingAction(null);
@@ -154,12 +172,12 @@ export function DeckActions() {
 
   const handleExportDeck = () => {
     const deckText = exportDeck();
-    const blob = new Blob([deckText], { type: 'text/plain' });
+    const blob = new Blob([deckText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
+
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${currentDeck.name.replace(/[^a-z0-9]/gi, '_')}.txt`;
+    a.download = `${currentDeck.name.replace(/[^a-z0-9]/gi, "_")}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -182,21 +200,27 @@ export function DeckActions() {
       toast({
         title: "Copy failed",
         description: "Could not copy to clipboard",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   // Helper to flatten mainDeck by count
   const getFlatMainDeck = () => {
-    return currentDeck.mainDeck.flatMap(deckCard => Array(deckCard.count).fill(deckCard.card));
+    return currentDeck.mainDeck.flatMap((deckCard) =>
+      Array(deckCard.count).fill(deckCard.card),
+    );
   };
 
   // Draw five random cards
   const handleDrawFive = () => {
     const flatDeck = getFlatMainDeck();
     if (flatDeck.length < 5) {
-      toast({ title: 'Not enough cards', description: 'Main deck must have at least 5 cards to draw a hand.', variant: 'destructive' });
+      toast({
+        title: "Not enough cards",
+        description: "Main deck must have at least 5 cards to draw a hand.",
+        variant: "destructive",
+      });
       return;
     }
     // Shuffle and pick 5
@@ -215,11 +239,13 @@ export function DeckActions() {
         onOpenChange={setShowLoginModal}
         onSuccess={handleLoginSuccess}
       />
-      
+
       {/* Quick Actions */}
       <Card className="bg-gradient-card border-border shadow-card">
         <CardHeader>
-          <CardTitle className="text-lg text-foreground">Quick Actions</CardTitle>
+          <CardTitle className="text-lg text-foreground">
+            Quick Actions
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Button
@@ -227,7 +253,7 @@ export function DeckActions() {
             className="w-full bg-gradient-primary hover:shadow-glow"
           >
             <Save className="h-4 w-4 mr-2" />
-            {user ? 'Save Deck' : 'Login to Save Deck'}
+            {user ? "Save Deck" : "Login to Save Deck"}
           </Button>
           <Button
             onClick={handleDrawFive}
@@ -235,7 +261,7 @@ export function DeckActions() {
           >
             Draw Five Cards
           </Button>
-          
+
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
@@ -246,7 +272,7 @@ export function DeckActions() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={handleCopyDeckList}
@@ -260,16 +286,21 @@ export function DeckActions() {
 
           <Dialog open={showSavedDecks} onOpenChange={setShowSavedDecks}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full border-border/50 hover:border-primary/50">
+              <Button
+                variant="outline"
+                className="w-full border-border/50 hover:border-primary/50"
+              >
                 <FolderOpen className="h-4 w-4 mr-2" />
-                {user ? `Load Deck (${savedDecks.length})` : 'Login to Load Decks'}
+                {user
+                  ? `Load Deck (${savedDecks.length})`
+                  : "Login to Load Decks"}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Saved Decks</DialogTitle>
               </DialogHeader>
-              
+
               <div className="space-y-4">
                 {!user ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -278,7 +309,7 @@ export function DeckActions() {
                       onClick={() => {
                         setShowSavedDecks(false);
                         setShowLoginModal(true);
-                        setPendingAction('load');
+                        setPendingAction("load");
                       }}
                       className="mt-4"
                     >
@@ -293,18 +324,29 @@ export function DeckActions() {
                   <div className="space-y-3">
                     {savedDecks.map((deck) => {
                       const deckStats = {
-                        main: deck.mainDeck.reduce((sum, card) => sum + card.count, 0),
-                        extra: deck.extraDeck.reduce((sum, card) => sum + card.count, 0),
-                        side: deck.sideDeck.reduce((sum, card) => sum + card.count, 0)
+                        main: deck.mainDeck.reduce(
+                          (sum, card) => sum + card.count,
+                          0,
+                        ),
+                        extra: deck.extraDeck.reduce(
+                          (sum, card) => sum + card.count,
+                          0,
+                        ),
+                        side: deck.sideDeck.reduce(
+                          (sum, card) => sum + card.count,
+                          0,
+                        ),
                       };
-                      
+
                       return (
                         <div
                           key={deck.id}
                           className="flex items-center justify-between p-4 bg-gradient-card rounded-lg border border-border"
                         >
                           <div className="space-y-1">
-                            <h3 className="font-medium text-foreground">{deck.name}</h3>
+                            <h3 className="font-medium text-foreground">
+                              {deck.name}
+                            </h3>
                             <div className="flex gap-2">
                               <Badge variant="outline" className="text-xs">
                                 Main: {deckStats.main}
@@ -317,10 +359,11 @@ export function DeckActions() {
                               </Badge>
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              Updated: {new Date(deck.updatedAt).toLocaleDateString()}
+                              Updated:{" "}
+                              {new Date(deck.updatedAt).toLocaleDateString()}
                             </div>
                           </div>
-                          
+
                           <div className="flex gap-2">
                             <Button
                               size="sm"
@@ -358,10 +401,10 @@ export function DeckActions() {
             placeholder="Enter deck name..."
             value={newDeckName}
             onChange={(e) => setNewDeckName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleNewDeck()}
+            onKeyDown={(e) => e.key === "Enter" && handleNewDeck()}
             className="bg-input/50 border-border/50 focus:bg-input focus:border-primary/50"
           />
-          <Button 
+          <Button
             onClick={handleNewDeck}
             disabled={!newDeckName.trim()}
             className="w-full bg-gradient-secondary hover:shadow-secondary-glow"
@@ -375,14 +418,22 @@ export function DeckActions() {
       {/* Current Deck Info */}
       <Card className="bg-gradient-card border-border shadow-card">
         <CardHeader>
-          <CardTitle className="text-lg text-foreground">Current Deck</CardTitle>
+          <CardTitle className="text-lg text-foreground">
+            Current Deck
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="text-sm text-muted-foreground">
-            <div className="font-medium text-foreground">{currentDeck.name}</div>
+            <div className="font-medium text-foreground">
+              {currentDeck.name}
+            </div>
             <div>Total: {stats.total} cards</div>
-            <div>Created: {new Date(currentDeck.createdAt).toLocaleDateString()}</div>
-            <div>Updated: {new Date(currentDeck.updatedAt).toLocaleDateString()}</div>
+            <div>
+              Created: {new Date(currentDeck.createdAt).toLocaleDateString()}
+            </div>
+            <div>
+              Updated: {new Date(currentDeck.updatedAt).toLocaleDateString()}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -393,13 +444,21 @@ export function DeckActions() {
             <DialogTitle>Your Hand (5 Cards)</DialogTitle>
           </DialogHeader>
           <div className="flex gap-2 justify-center items-center py-4">
-            {drawnHand.map(card => (
-              <CardPreview key={card.id + Math.random()} card={card} inDeck={false} />
+            {drawnHand.map((card) => (
+              <CardPreview
+                key={card.id + Math.random()}
+                card={card}
+                inDeck={false}
+              />
             ))}
           </div>
           <div className="flex gap-2 justify-center">
-            <Button onClick={handleDrawFive} variant="outline">Re-draw</Button>
-            <Button onClick={() => setShowDrawModal(false)} variant="secondary">Close</Button>
+            <Button onClick={handleDrawFive} variant="outline">
+              Re-draw
+            </Button>
+            <Button onClick={() => setShowDrawModal(false)} variant="secondary">
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

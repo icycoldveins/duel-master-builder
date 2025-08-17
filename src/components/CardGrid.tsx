@@ -1,12 +1,12 @@
-import { YugiohCard } from '@/lib/api';
-import { CardPreview } from './CardPreview';
-import { useContext } from 'react';
-import { CardDialogContext } from './CardDialogProvider';
+import { YugiohCard } from "@/lib/api";
+import { CardPreview } from "./CardPreview";
+import { useContext } from "react";
+import { CardDialogContext } from "./CardDialogProvider";
 
 interface DeckCardDisplay extends YugiohCard {
   deckCount?: number;
   inDeck?: boolean;
-  deckSection?: 'main' | 'extra' | 'side';
+  deckSection?: "main" | "extra" | "side";
 }
 
 interface CardGridProps {
@@ -28,19 +28,21 @@ export function CardGrid({ cards, compact = false }: CardGridProps) {
   }
 
   return (
-    <div className={`grid gap-4 ${compact ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'}`}>
+    <div
+      className={`grid gap-4 ${compact ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"}`}
+    >
       {cards.map((card, index) => {
         const deckCard = card as DeckCardDisplay;
         return (
-          <div 
+          <div
             key={card.id}
             className="animate-scale-in"
             style={{ animationDelay: `${Math.min(index * 0.02, 0.3)}s` }}
           >
-            <CardPreview 
-              card={card} 
+            <CardPreview
+              card={card}
               inDeck={deckCard.inDeck || false}
-              deckSection={deckCard.deckSection || 'main'}
+              deckSection={deckCard.deckSection || "main"}
               count={deckCard.deckCount || 0}
               compact={compact}
             />

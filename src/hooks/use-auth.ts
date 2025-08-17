@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -19,9 +19,11 @@ export function useAuth() {
         setLoading(false);
       }
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      },
+    );
     return () => {
       mounted = false;
       listener?.subscription.unsubscribe();
@@ -29,4 +31,4 @@ export function useAuth() {
   }, []);
 
   return { user, loading };
-} 
+}

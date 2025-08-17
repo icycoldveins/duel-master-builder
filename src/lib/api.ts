@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
 
-const YGO_API_BASE = 'https://db.ygoprodeck.com/api/v7/cardinfo.php';
+const YGO_API_BASE = "https://db.ygoprodeck.com/api/v7/cardinfo.php";
 
 export interface YugiohCard {
   id: number;
@@ -43,7 +43,10 @@ export interface SearchFilters {
 class YugiohAPI {
   private cache = new Map<string, YugiohCard[]>();
 
-  async searchCards(filters: SearchFilters = {}, limit = 50): Promise<YugiohCard[]> {
+  async searchCards(
+    filters: SearchFilters = {},
+    limit = 50,
+  ): Promise<YugiohCard[]> {
     const cacheKey = JSON.stringify(filters);
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!.slice(0, limit);
@@ -51,35 +54,40 @@ class YugiohAPI {
 
     try {
       const params = new URLSearchParams();
-      
-      if (filters.fname) params.append('fname', filters.fname);
-      if (filters.type) params.append('type', filters.type);
-      if (filters.race) params.append('race', filters.race);
-      if (filters.archetype) params.append('archetype', filters.archetype);
-      if (filters.attribute) params.append('attribute', filters.attribute);
-      if (filters.level !== undefined) params.append('level', filters.level.toString());
-      if (filters.atk !== undefined) params.append('atk', filters.atk.toString());
-      if (filters.def !== undefined) params.append('def', filters.def.toString());
+
+      if (filters.fname) params.append("fname", filters.fname);
+      if (filters.type) params.append("type", filters.type);
+      if (filters.race) params.append("race", filters.race);
+      if (filters.archetype) params.append("archetype", filters.archetype);
+      if (filters.attribute) params.append("attribute", filters.attribute);
+      if (filters.level !== undefined)
+        params.append("level", filters.level.toString());
+      if (filters.atk !== undefined)
+        params.append("atk", filters.atk.toString());
+      if (filters.def !== undefined)
+        params.append("def", filters.def.toString());
 
       const url = `${YGO_API_BASE}?${params.toString()}`;
       const response = await axios.get<{ data: YugiohCard[] }>(url);
-      
+
       const cards = response.data.data || [];
       this.cache.set(cacheKey, cards);
-      
+
       return cards.slice(0, limit);
     } catch (error) {
-      console.error('Error fetching cards:', error);
+      console.error("Error fetching cards:", error);
       return [];
     }
   }
 
   async getCardById(id: number): Promise<YugiohCard | null> {
     try {
-      const response = await axios.get<{ data: YugiohCard[] }>(`${YGO_API_BASE}?id=${id}`);
+      const response = await axios.get<{ data: YugiohCard[] }>(
+        `${YGO_API_BASE}?id=${id}`,
+      );
       return response.data.data?.[0] || null;
     } catch (error) {
-      console.error('Error fetching card by ID:', error);
+      console.error("Error fetching card by ID:", error);
       return null;
     }
   }

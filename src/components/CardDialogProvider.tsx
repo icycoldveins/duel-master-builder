@@ -1,7 +1,13 @@
-import { createContext, useState, ReactNode, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { CardDetail } from './CardDetail';
-import { YugiohCard } from '@/lib/api';
+import { createContext, useState, ReactNode, useCallback } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { CardDetail } from "./CardDetail";
+import { YugiohCard } from "@/lib/api";
 
 export const CardDialogContext = createContext<{
   openCard: (card: YugiohCard) => void;
@@ -34,7 +40,10 @@ export function CardDialogProvider({ children }: { children: ReactNode }) {
   return (
     <CardDialogContext.Provider value={value}>
       {children}
-      <Dialog open={isDialogOpen} onOpenChange={open => (open ? setIsDialogOpen(true) : closeCard())}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => (open ? setIsDialogOpen(true) : closeCard())}
+      >
         {selectedCard && (
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
