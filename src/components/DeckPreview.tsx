@@ -38,8 +38,16 @@ export function DeckPreview({ deck }: DeckPreviewProps) {
         {sectionData.map(({ title, cards, section, color, limit }) => (
           <div key={section}>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className={`text-xs font-semibold text-${color}`}>{title}</span>
-              <Badge className={`bg-${color}/20 text-${color} border-${color}/30 text-xs`}>{cards.reduce((sum, c) => sum + c.count, 0)}/{limit}</Badge>
+              <span className={`text-xs font-semibold ${
+                color === 'main-deck' ? 'text-blue-500' :
+                color === 'extra-deck' ? 'text-purple-500' :
+                'text-yellow-500'
+              }`}>{title}</span>
+              <Badge className={`text-xs ${
+                color === 'main-deck' ? 'bg-blue-500/20 text-blue-500 border-blue-500/30' :
+                color === 'extra-deck' ? 'bg-purple-500/20 text-purple-500 border-purple-500/30' :
+                'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
+              }`}>{cards.reduce((sum, c) => sum + c.count, 0)}/{limit}</Badge>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
               {cards.slice(0, 12).map(deckCard => (
