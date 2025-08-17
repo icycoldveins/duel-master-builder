@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Only create client if both URL and key are provided
+export const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // Helper: map camelCase to snake_case for DB
 function toDbDeck(deck, userId) {
@@ -33,6 +36,10 @@ function fromDbDeck(dbDeck) {
 }
 
 export async function saveDeck(deck, userId) {
+  if (!supabase) {
+    console.warn('Supabase not configured - deck saving disabled');
+    return [];
+  }
   const deckToSave = toDbDeck(deck, userId);
   const { data, error }: { data: any[] | null, error: any } = await supabase
     .from('decks')
@@ -43,6 +50,10 @@ export async function saveDeck(deck, userId) {
 }
 
 export async function getDecks(userId) {
+  if (!supabase) {
+    console.warn('Supabase not configured - deck loading disabled');
+    return [];
+  }
   const { data, error }: { data: any[] | null, error: any } = await supabase
     .from('decks')
     .select('*')
@@ -54,6 +65,10 @@ export async function getDecks(userId) {
 
 // Username/profile helpers
 export async function isUsernameAvailable(username) {
+  if (!supabase) {
+    console.warn('Supabase not configured - username check disabled');
+    return true;
+  }
   const { data, error } = await supabase
     .from('profiles')
     .select('id')
@@ -64,6 +79,10 @@ export async function isUsernameAvailable(username) {
 }
 
 export async function upsertProfile(userId, username) {
+  if (!supabase) {
+    console.warn('Supabase not configured - profile update disabled');
+    return null;
+  }
   const { data, error } = await supabase
     .from('profiles')
     .upsert({ id: userId, username, updated_at: new Date().toISOString() }, { onConflict: 'id' });

@@ -6,6 +6,12 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // If Supabase is not configured, skip authentication
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
     supabase.auth.getUser().then(({ data }) => {
       if (mounted) {
