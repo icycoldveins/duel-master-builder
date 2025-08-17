@@ -1,61 +1,91 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { yugiohAPI, YugiohCard, SearchFilters } from '@/lib/api';
-import { CardGrid } from './CardGrid';
-import { useToast } from '@/hooks/use-toast';
-import { useDeckStore } from '@/store/deckStore';
+import { useState, useEffect, useCallback } from "react";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { yugiohAPI, YugiohCard, SearchFilters } from "@/lib/api";
+import { CardGrid } from "./CardGrid";
+import { useToast } from "@/hooks/use-toast";
+import { useDeckStore } from "@/store/deckStore";
 
 export function CardSearch() {
   const [cards, setCards] = useState<YugiohCard[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
-  const currentDeck = useDeckStore(state => state.currentDeck);
+  const currentDeck = useDeckStore((state) => state.currentDeck);
 
-  const searchCards = useCallback(async (term: string, searchFilters: SearchFilters = {}) => {
-    setLoading(true);
-    try {
-      const results = await yugiohAPI.searchCards({
-        fname: term || undefined,
-        ...searchFilters
-      });
-      setCards(results);
-      
-      if (results.length === 0 && (term || Object.keys(searchFilters).length > 0)) {
-        toast({
-          title: "No cards found",
-          description: "Try adjusting your search criteria",
+  const searchCards = useCallback(
+    async (term: string, searchFilters: SearchFilters = {}) => {
+      setLoading(true);
+      try {
+        const results = await yugiohAPI.searchCards({
+          fname: term || undefined,
+          ...searchFilters,
         });
+        setCards(results);
+
+        if (
+          results.length === 0 &&
+          (term || Object.keys(searchFilters).length > 0)
+        ) {
+          toast({
+            title: "No cards found",
+            description: "Try adjusting your search criteria",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Search failed",
+          description: "Failed to search cards. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      toast({
-        title: "Search failed",
-        description: "Failed to search cards. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
   // Load random cards on initial mount
   useEffect(() => {
-    searchCards('');
+    searchCards("");
   }, [searchCards]);
 
   // Enrich cards with inDeck, deckSection, and deckCount
-  const enrichedCards = cards.map(card => {
-    const main = currentDeck.mainDeck.find(dc => dc.card.id === card.id);
-    if (main) return { ...card, inDeck: true, deckSection: 'main', deckCount: main.count };
-    const extra = currentDeck.extraDeck.find(dc => dc.card.id === card.id);
-    if (extra) return { ...card, inDeck: true, deckSection: 'extra', deckCount: extra.count };
-    const side = currentDeck.sideDeck.find(dc => dc.card.id === card.id);
-    if (side) return { ...card, inDeck: true, deckSection: 'side', deckCount: side.count };
+  const enrichedCards = cards.map((card) => {
+    const main = currentDeck.mainDeck.find((dc) => dc.card.id === card.id);
+    if (main)
+      return {
+        ...card,
+        inDeck: true,
+        deckSection: "main",
+        deckCount: main.count,
+      };
+    const extra = currentDeck.extraDeck.find((dc) => dc.card.id === card.id);
+    if (extra)
+      return {
+        ...card,
+        inDeck: true,
+        deckSection: "extra",
+        deckCount: extra.count,
+      };
+    const side = currentDeck.sideDeck.find((dc) => dc.card.id === card.id);
+    if (side)
+      return {
+        ...card,
+        inDeck: true,
+        deckSection: "side",
+        deckCount: side.count,
+      };
     return { ...card, inDeck: false, deckCount: 0 };
   });
 
@@ -64,8 +94,14 @@ export function CardSearch() {
     searchCards(searchTerm, filters);
   };
 
-  const handleFilterChange = (key: keyof SearchFilters, value: string | number | undefined) => {
-    const newFilters = { ...filters, [key]: value === 'all' ? undefined : value };
+  const handleFilterChange = (
+    key: keyof SearchFilters,
+    value: string | number | undefined,
+  ) => {
+    const newFilters = {
+      ...filters,
+      [key]: value === "all" ? undefined : value,
+    };
     setFilters(newFilters);
     searchCards(searchTerm, newFilters);
   };
@@ -74,7 +110,9 @@ export function CardSearch() {
     <div className="space-y-6">
       {/* Search Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gradient-accent mb-5">Card Search</h2>
+        <h2 className="text-2xl font-bold text-gradient-accent mb-5">
+          Card Search
+        </h2>
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="flex gap-3">
             <div className="relative flex-1 group">
@@ -87,27 +125,35 @@ export function CardSearch() {
               />
               <div className="absolute inset-0 rounded-2xl bg-gradient-accent opacity-0 group-focus-within:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
             </div>
-            <Button 
-              type="submit" 
-              disabled={loading} 
+            <Button
+              type="submit"
+              disabled={loading}
               className="h-14 px-8 bg-gradient-accent hover:shadow-[0_0_30px_rgba(275,90%,70%,0.4)] transition-all duration-300 rounded-2xl font-semibold text-base"
             >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Search className="h-5 w-5" />
+              )}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-14 px-5 border-2 transition-all duration-300 rounded-2xl ${showFilters ? 'border-accent/50 bg-accent/10' : 'border-white/10 hover:border-accent/30 hover:bg-accent/5'}`}
+              className={`h-14 px-5 border-2 transition-all duration-300 rounded-2xl ${showFilters ? "border-accent/50 bg-accent/10" : "border-white/10 hover:border-accent/30 hover:bg-accent/5"}`}
             >
-              <Filter className={`h-5 w-5 transition-transform duration-300 ${showFilters ? 'rotate-180 text-accent' : ''}`} />
+              <Filter
+                className={`h-5 w-5 transition-transform duration-300 ${showFilters ? "rotate-180 text-accent" : ""}`}
+              />
             </Button>
           </div>
 
           {/* Advanced Filters */}
           {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-black/30 backdrop-blur-md rounded-2xl border-2 border-white/10 animate-scale-in">
-              <Select onValueChange={(value) => handleFilterChange('type', value)}>
+              <Select
+                onValueChange={(value) => handleFilterChange("type", value)}
+              >
                 <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Card Type" />
                 </SelectTrigger>
@@ -123,7 +169,9 @@ export function CardSearch() {
                 </SelectContent>
               </Select>
 
-              <Select onValueChange={(value) => handleFilterChange('race', value)}>
+              <Select
+                onValueChange={(value) => handleFilterChange("race", value)}
+              >
                 <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Race/Type" />
                 </SelectTrigger>
@@ -139,7 +187,11 @@ export function CardSearch() {
                 </SelectContent>
               </Select>
 
-              <Select onValueChange={(value) => handleFilterChange('attribute', value)}>
+              <Select
+                onValueChange={(value) =>
+                  handleFilterChange("attribute", value)
+                }
+              >
                 <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Attribute" />
                 </SelectTrigger>
@@ -155,14 +207,23 @@ export function CardSearch() {
                 </SelectContent>
               </Select>
 
-              <Select onValueChange={(value) => handleFilterChange('level', value === 'all' ? undefined : parseInt(value))}>
+              <Select
+                onValueChange={(value) =>
+                  handleFilterChange(
+                    "level",
+                    value === "all" ? undefined : parseInt(value),
+                  )
+                }
+              >
                 <SelectTrigger className="h-12 bg-black/40 border-white/10 hover:border-accent/30 hover:bg-black/50 transition-all duration-300 rounded-xl">
                   <SelectValue placeholder="Level/Rank" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Levels</SelectItem>
-                  {[1,2,3,4,5,6,7,8,9,10,11,12].map(level => (
-                    <SelectItem key={level} value={level.toString()}>{level}</SelectItem>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((level) => (
+                    <SelectItem key={level} value={level.toString()}>
+                      {level}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -182,7 +243,7 @@ export function CardSearch() {
               </span>
             ) : (
               <span className="bg-gradient-accent bg-clip-text text-transparent font-bold">
-                {cards.length} {cards.length === 1 ? 'card' : 'cards'} found
+                {cards.length} {cards.length === 1 ? "card" : "cards"} found
               </span>
             )}
           </h3>
@@ -192,7 +253,7 @@ export function CardSearch() {
             </span>
           )}
         </div>
-        
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-6">
             <div className="relative">
@@ -200,7 +261,9 @@ export function CardSearch() {
               <div className="absolute top-0 left-0 w-20 h-20 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
               <div className="absolute inset-0 blur-xl bg-accent/20 rounded-full animate-pulse"></div>
             </div>
-            <p className="text-muted-foreground text-base font-medium">Loading cards...</p>
+            <p className="text-muted-foreground text-base font-medium">
+              Loading cards...
+            </p>
           </div>
         ) : cards.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-6">
@@ -208,8 +271,12 @@ export function CardSearch() {
               <Search className="h-12 w-12 text-accent/60" />
             </div>
             <div className="text-center space-y-2">
-              <p className="text-lg font-medium text-foreground">No cards found</p>
-              <p className="text-sm text-muted-foreground/70">Try adjusting your search criteria</p>
+              <p className="text-lg font-medium text-foreground">
+                No cards found
+              </p>
+              <p className="text-sm text-muted-foreground/70">
+                Try adjusting your search criteria
+              </p>
             </div>
           </div>
         ) : (

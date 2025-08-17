@@ -1,6 +1,6 @@
-import { Deck } from '@/store/deckStore';
-import { CardPreview } from './CardPreview';
-import { Badge } from '@/components/ui/badge';
+import { Deck } from "@/store/deckStore";
+import { CardPreview } from "./CardPreview";
+import { Badge } from "@/components/ui/badge";
 
 interface DeckPreviewProps {
   deck: Deck;
@@ -9,63 +9,81 @@ interface DeckPreviewProps {
 export function DeckPreview({ deck }: DeckPreviewProps) {
   const sectionData = [
     {
-      title: 'Main Deck',
+      title: "Main Deck",
       cards: deck.mainDeck,
-      section: 'main' as const,
-      color: 'main-deck',
+      section: "main" as const,
+      color: "main-deck",
       limit: 60,
     },
     {
-      title: 'Extra Deck',
+      title: "Extra Deck",
       cards: deck.extraDeck,
-      section: 'extra' as const,
-      color: 'extra-deck',
+      section: "extra" as const,
+      color: "extra-deck",
       limit: 15,
     },
     {
-      title: 'Side Deck',
+      title: "Side Deck",
       cards: deck.sideDeck,
-      section: 'side' as const,
-      color: 'side-deck',
+      section: "side" as const,
+      color: "side-deck",
       limit: 15,
     },
   ];
 
   return (
     <div className="bg-gradient-card border border-border rounded-xl p-4 mb-4 shadow-card">
-      <h2 className="text-base font-semibold mb-1 text-foreground">Deck Preview</h2>
+      <h2 className="text-base font-semibold mb-1 text-foreground">
+        Deck Preview
+      </h2>
       <div className="space-y-2">
         {sectionData.map(({ title, cards, section, color, limit }) => (
           <div key={section}>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className={`text-xs font-semibold ${
-                color === 'main-deck' ? 'text-blue-500' :
-                color === 'extra-deck' ? 'text-purple-500' :
-                'text-yellow-500'
-              }`}>{title}</span>
-              <Badge className={`text-xs ${
-                color === 'main-deck' ? 'bg-blue-500/20 text-blue-500 border-blue-500/30' :
-                color === 'extra-deck' ? 'bg-purple-500/20 text-purple-500 border-purple-500/30' :
-                'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
-              }`}>{cards.reduce((sum, c) => sum + c.count, 0)}/{limit}</Badge>
+              <span
+                className={`text-xs font-semibold ${
+                  color === "main-deck"
+                    ? "text-blue-500"
+                    : color === "extra-deck"
+                      ? "text-purple-500"
+                      : "text-yellow-500"
+                }`}
+              >
+                {title}
+              </span>
+              <Badge
+                className={`text-xs ${
+                  color === "main-deck"
+                    ? "bg-blue-500/20 text-blue-500 border-blue-500/30"
+                    : color === "extra-deck"
+                      ? "bg-purple-500/20 text-purple-500 border-purple-500/30"
+                      : "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
+                }`}
+              >
+                {cards.reduce((sum, c) => sum + c.count, 0)}/{limit}
+              </Badge>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
-              {cards.slice(0, 12).map(deckCard => (
+              {cards.slice(0, 12).map((deckCard) => (
                 <div key={deckCard.card.id} className="relative">
-                  <CardPreview 
-                    card={deckCard.card} 
-                    inDeck={true} 
-                    deckSection={section} 
-                    count={deckCard.count} 
+                  <CardPreview
+                    card={deckCard.card}
+                    inDeck={true}
+                    deckSection={section}
+                    count={deckCard.count}
                     compact={true}
                   />
                 </div>
               ))}
               {cards.length > 12 && (
-                <span className="ml-1 text-[10px] text-muted-foreground">+{cards.length - 12} more</span>
+                <span className="ml-1 text-[10px] text-muted-foreground">
+                  +{cards.length - 12} more
+                </span>
               )}
               {cards.length === 0 && (
-                <span className="text-[10px] text-muted-foreground">No cards</span>
+                <span className="text-[10px] text-muted-foreground">
+                  No cards
+                </span>
               )}
             </div>
           </div>
@@ -73,4 +91,4 @@ export function DeckPreview({ deck }: DeckPreviewProps) {
       </div>
     </div>
   );
-} 
+}

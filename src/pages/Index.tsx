@@ -1,4 +1,4 @@
-import { DeckBuilder } from '@/components/DeckBuilder';
+import { DeckBuilder } from "@/components/DeckBuilder";
 
 const Index = () => {
   return <DeckBuilder />;
