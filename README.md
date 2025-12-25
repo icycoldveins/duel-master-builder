@@ -57,15 +57,6 @@ Visit [http://localhost:8080](http://localhost:8080) to view the app.
 
 ---
 
-## Metrics
-
-- **12,000+** unique cards in the database
-- **200+** archetypes supported
-- **Up to 60** main deck cards, **15** extra/side deck cards per deck
-- **<300ms** average API response time
-- **99.9%** uptime during development/testing
-
----
 
 ## Deployment
 
